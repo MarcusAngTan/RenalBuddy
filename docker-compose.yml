@@ -1,0 +1,26 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: renalbuddy
+      MYSQL_DATABASE: renalbuddy
+      MYSQL_USER: renalbuddy
+      MYSQL_PASSWORD: renalbuddy
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-urenalbuddy", "-prenalbuddy"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: mysql+pymysql://renalbuddy:renalbuddy@db:3306/renalbuddy?charset=utf8mb4
+      JWT_SECRET: dev-only-change-me
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    depends_on:
+      db:
+        condition: service_healthy
