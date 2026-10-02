@@ -70,7 +70,7 @@ export function JournalPage() {
           <Card key={entry.id}>
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{entry.body}</p>
             <p className="mt-2 text-xs text-ink/50">{formatDate(entry.created_at.slice(0, 10))}</p>
-            <button className="mt-2 text-sm font-semibold text-teal" type="button" onClick={() => toggle.mutate(entry)}>
+            <button className="mt-2 text-sm font-extrabold text-teal" type="button" onClick={() => toggle.mutate(entry)}>
               {entry.include_in_summary ? "Included in visit summary" : "Include in visit summary"}
             </button>
           </Card>

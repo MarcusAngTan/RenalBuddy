@@ -2,9 +2,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 import { MedicationForm } from "../components/MedicationForm";
-import { Card, Empty, PageHeader } from "../components/ui";
+import { Card, Empty, PageHeader, PillIcon } from "../components/ui";
 import { formatDate } from "../lib/dates";
-import { SCHEDULES, type Medication } from "../types";
+import { SCHEDULES, type Medication, type MedicineExplain } from "../types";
 
 export function MedsPage() {
   const meds = useQuery({
@@ -17,10 +17,7 @@ export function MedsPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Medicines" lede="What you take besides the steroid taper. Dose changes are kept for the visit summary." />
-      <Link className="inline-flex min-h-11 items-center rounded-2xl bg-teal px-4 text-sm font-semibold text-white" to="/meds/new">
-        Add medicine
-      </Link>
-      {meds.isLoading ? <p className="text-sm">Loading…</p> : null}
+      {meds.isLoading ? <p className="text-sm font-semibold">Loading…</p> : null}
       {active.length === 0 && !meds.isLoading ? (
         <Empty
           title="No active medicines"
@@ -36,29 +33,53 @@ export function MedsPage() {
       </div>
       {stopped.length > 0 ? (
         <div className="space-y-2">
-          <h2 className="font-serif text-2xl">Stopped</h2>
+          <h2 className="text-2xl font-extrabold">Stopped</h2>
           {stopped.map((med) => (
             <MedRow key={med.id} med={med} />
           ))}
         </div>
       ) : null}
+      <Link
+        className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-lime px-4 text-sm font-extrabold text-white shadow-pop"
+        to="/meds/new"
+      >
+        + Add a medicine
+      </Link>
     </div>
   );
 }
 
 function MedRow({ med }: { med: Medication }) {
   const schedule = SCHEDULES.find((item) => item.value === med.schedule)?.label ?? med.schedule;
+  const explain = useQuery({
+    queryKey: ["explain", med.name],
+    queryFn: () => api<MedicineExplain>(`/api/medicines/explain?name=${encodeURIComponent(med.name)}`),
+  });
   return (
     <Link to={`/meds/${med.id}`}>
       <Card>
-        <p className="font-medium">{med.name}</p>
-        <p className="text-sm text-ink/70">
-          {med.dose_amount} {med.dose_unit} · {schedule}
-        </p>
-        <p className="text-sm text-ink/50">
-          Started {formatDate(med.started_on)}
-          {med.stopped_on ? ` · Stopped ${formatDate(med.stopped_on)}` : ""}
-        </p>
+        <div className="flex items-start gap-3">
+          <PillIcon />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-extrabold">{med.name}</p>
+              <span className="text-sm font-extrabold text-teal">Edit</span>
+            </div>
+            <p className="text-sm font-bold text-teal">
+              {med.dose_amount} {med.dose_unit} · {schedule}
+            </p>
+            {explain.data ? (
+              <p className="mt-1 text-sm leading-relaxed text-ink/70">
+                {explain.data.known && explain.data.class_name ? `${explain.data.class_name}. ` : ""}
+                {explain.data.purpose} {explain.data.dose_note}
+              </p>
+            ) : null}
+            <p className="text-sm text-ink/50">
+              Started {formatDate(med.started_on)}
+              {med.stopped_on ? ` · Stopped ${formatDate(med.stopped_on)}` : ""}
+            </p>
+          </div>
+        </div>
       </Card>
     </Link>
   );
@@ -68,7 +89,7 @@ export function NewMedPage() {
   const navigate = useNavigate();
   return (
     <div className="space-y-4">
-      <PageHeader title="Add medicine" />
+      <PageHeader title="Add medicine" lede="You’ll get this on Today for the days you take it." />
       <MedicationForm submitLabel="Save medicine" onSaved={() => navigate("/meds")} />
     </div>
   );
@@ -85,8 +106,8 @@ export function EditMedPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Edit medicine" />
-      {med.isLoading ? <p className="text-sm">Loading…</p> : null}
-      {med.isError ? <p className="text-sm text-clay">Medicine not found.</p> : null}
+      {med.isLoading ? <p className="text-sm font-semibold">Loading…</p> : null}
+      {med.isError ? <p className="text-sm font-semibold text-clay">Medicine not found.</p> : null}
       {med.data ? <MedicationForm initial={med.data} submitLabel="Save changes" onSaved={() => navigate("/meds")} /> : null}
     </div>
   );

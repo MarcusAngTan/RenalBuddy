@@ -19,7 +19,7 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: mysql+pymysql://renalbuddy:renalbuddy@db:3306/renalbuddy?charset=utf8mb4
-      JWT_SECRET: dev-only-change-me
+      JWT_SECRET: local-compose-not-for-production
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
     depends_on:
       db:

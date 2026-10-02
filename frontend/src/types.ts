@@ -56,6 +56,11 @@ export type User = {
   coping_interests: string[];
   disclaimer_accepted_at: string;
   has_clinical_data: boolean;
+  logs_for: "self" | "child";
+  days_logged_this_interval: number;
+  days_in_interval: number;
+  open_questions: number;
+  visit_opened_at: string | null;
 };
 
 export type TokenResponse = {
@@ -195,6 +200,28 @@ export type SummarySection = {
   lines: string[];
 };
 
+export type SummaryTimeline = {
+  dipstick: Array<{ on: string; result: string }>;
+  weight: Array<{ on: string; kg: number }>;
+  oedema: Array<{ on: string; score: number }>;
+  effects: Array<{ on: string; code: string; severity: number }>;
+  taper_steps: Array<{ title: string; start_on: string; end_on: string; dose: number; unit: string }>;
+};
+
+export type NarrationBlock = {
+  key: string;
+  title: string;
+  lines: string[];
+};
+
+export type Narration = {
+  text: string;
+  blocks?: NarrationBlock[];
+  source: string;
+  verified: boolean;
+  fallback: boolean;
+};
+
 export type Summary = {
   id: number | null;
   period_start: string;
@@ -203,7 +230,27 @@ export type Summary = {
   summary_json: {
     period_start: string;
     period_end: string;
+    coverage?: { days_logged: number; days_in_interval: number; incomplete: boolean };
+    timeline?: SummaryTimeline;
     sections: SummarySection[];
+    narration?: Narration;
   };
   created_at: string | null;
+  narration?: Narration | null;
+};
+
+export type MedicineExplain = {
+  name: string;
+  known: boolean;
+  class_name: string | null;
+  purpose: string;
+  dose_note: string;
+};
+
+export type QuestionSuggestion = {
+  id: string;
+  body: string;
+  reason: string;
+  source: string;
+  already_saved: boolean;
 };

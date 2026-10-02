@@ -18,8 +18,18 @@ export function setToken(token: string | null) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
-function errorMessage(data: unknown) {
-  if (!data || typeof data !== "object" || !("detail" in data)) return "Something went wrong.";
+function unreachableMessage(status: number) {
+  if (status === 502 || status === 503 || status === 504) {
+    return "Could not reach the API. Start the backend (for example docker compose up) and keep it running.";
+  }
+  if (status === 500) {
+    return "Could not reach the API. Start the backend on port 8000 and refresh this page.";
+  }
+  return `Request failed (${status}).`;
+}
+
+function errorMessage(data: unknown, status: number) {
+  if (!data || typeof data !== "object" || !("detail" in data)) return unreachableMessage(status);
   const detail = (data as { detail: unknown }).detail;
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) {
@@ -27,7 +37,7 @@ function errorMessage(data: unknown) {
       .map((item) => (item && typeof item === "object" && "msg" in item ? String(item.msg) : "Check the form."))
       .join(" ");
   }
-  return "Something went wrong.";
+  return unreachableMessage(status);
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -41,13 +51,23 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   const response = await fetch(`${base}${path}`, { ...options, headers });
   if (response.status === 204) return undefined as T;
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (!response.ok) {
+        throw new ApiError(response.status, unreachableMessage(response.status));
+      }
+      throw new ApiError(response.status, "Unexpected response from the server.");
+    }
+  }
   if (!response.ok) {
     if (response.status === 401 && !path.startsWith("/api/auth/")) {
       setToken(null);
       window.dispatchEvent(new Event("renalbuddy-auth"));
     }
-    throw new ApiError(response.status, errorMessage(data));
+    throw new ApiError(response.status, errorMessage(data, response.status));
   }
   return data as T;
 }

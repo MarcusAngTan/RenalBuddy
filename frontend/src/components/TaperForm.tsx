@@ -13,18 +13,23 @@ type StepDraft = {
   instruction: string;
 };
 
-function blankStep(): StepDraft {
+function emptyDatedSteps(): StepDraft[] {
   const today = todayISO();
-  return { dose: "", start: today, end: addDays(today, 6), instruction: "Once each morning" };
+  return [0, 1, 2, 3].map((index) => ({
+    dose: "",
+    start: addDays(today, index * 14),
+    end: addDays(today, index * 14 + 13),
+    instruction: "",
+  }));
 }
 
 function sampleSteps(): StepDraft[] {
   const today = todayISO();
   return [
-    { dose: "40", start: addDays(today, -10), end: addDays(today, -4), instruction: "Once each morning" },
-    { dose: "30", start: addDays(today, -3), end: addDays(today, 3), instruction: "Once each morning" },
-    { dose: "20", start: addDays(today, 4), end: addDays(today, 10), instruction: "Once each morning" },
-    { dose: "10", start: addDays(today, 11), end: addDays(today, 24), instruction: "Once each morning" },
+    { dose: "40", start: today, end: addDays(today, 13), instruction: "Once each morning" },
+    { dose: "30", start: addDays(today, 14), end: addDays(today, 27), instruction: "Once each morning" },
+    { dose: "20", start: addDays(today, 28), end: addDays(today, 41), instruction: "Once each morning" },
+    { dose: "10", start: addDays(today, 42), end: addDays(today, 55), instruction: "Once each morning" },
   ];
 }
 
@@ -43,7 +48,7 @@ export function TaperForm({
   const [unit, setUnit] = useState("mg");
   const [title, setTitle] = useState("Prednisolone taper");
   const [note, setNote] = useState("");
-  const [steps, setSteps] = useState<StepDraft[]>([blankStep()]);
+  const [steps, setSteps] = useState<StepDraft[]>(emptyDatedSteps());
   const [error, setError] = useState<string | null>(null);
 
   const save = useMutation({
@@ -122,7 +127,7 @@ export function TaperForm({
       </Field>
       <div className="space-y-3">
         {steps.map((step, index) => (
-          <div key={index} className="rounded-3xl border border-line bg-white p-3">
+          <div key={index} className="rounded-[1.5rem] border border-line bg-white p-3 shadow-card">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-semibold">Step {index + 1}</p>
               {steps.length > 1 ? (
@@ -175,11 +180,11 @@ export function TaperForm({
         ))}
       </div>
       <div className="flex gap-2">
-        <Button type="button" variant="quiet" onClick={() => setSteps((current) => [...current, blankStep()])}>
+        <Button type="button" variant="quiet" onClick={() => setSteps((current) => [...current, emptyDatedSteps()[0]])}>
           Add step
         </Button>
         <Button type="button" variant="quiet" onClick={() => setSteps(sampleSteps())}>
-          Fill sample steps
+          Fill 40 mg then 30 mg example
         </Button>
       </div>
       <ErrorText>{error}</ErrorText>

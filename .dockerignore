@@ -1,0 +1,12 @@
+.git
+**/.venv
+**/venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.env
+**/node_modules
+frontend/dist
+**/*.docx
+.DS_Store

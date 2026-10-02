@@ -35,7 +35,7 @@ export function LoginPage() {
           }
         }}
       >
-        <h1 className="font-serif text-3xl">Sign in</h1>
+        <h1 className="text-3xl font-extrabold">Sign in</h1>
         <Field label="Email">
           <input className={inputClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         </Field>
@@ -52,10 +52,24 @@ export function LoginPage() {
         <Button className="w-full" type="submit" disabled={pending}>
           {pending ? "Signing in…" : "Sign in"}
         </Button>
+        <Button
+          className="w-full"
+          type="button"
+          variant="quiet"
+          onClick={() => {
+            setEmail("ada.demo@example.com");
+            setPassword("password123");
+          }}
+        >
+          Demo data
+        </Button>
       </form>
+      <p className="mt-3 text-xs leading-relaxed text-ink/55">
+        Demo account: ada.demo@example.com / password123. After sign in, use Demo data on Today if the log is empty.
+      </p>
       <p className="mt-6 text-sm">
         New here?{" "}
-        <Link className="font-semibold text-teal" to="/register">
+        <Link className="font-extrabold text-teal" to="/register">
           Create an account
         </Link>
       </p>
@@ -99,7 +113,7 @@ export function RegisterPage() {
           }
         }}
       >
-        <h1 className="font-serif text-3xl">Create your log</h1>
+        <h1 className="text-3xl font-extrabold">Create your log</h1>
         <Field label="Name">
           <input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} required />
         </Field>
@@ -133,7 +147,7 @@ export function RegisterPage() {
       </form>
       <p className="mt-6 text-sm">
         Already have an account?{" "}
-        <Link className="font-semibold text-teal" to="/login">
+        <Link className="font-extrabold text-teal" to="/login">
           Sign in
         </Link>
       </p>

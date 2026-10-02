@@ -1,28 +1,51 @@
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { TaperForm } from "../components/TaperForm";
-import { Card, Disclaimer, Empty, PageHeader } from "../components/ui";
+import { Button, Card, Disclaimer, Empty, PageHeader } from "../components/ui";
 import { formatDate } from "../lib/dates";
-import type { TaperPlan } from "../types";
+import { buildTimelinePlans } from "../lib/taperTimeline";
+import type { Medication, TaperPlan } from "../types";
 
 export function TaperPage() {
   const plans = useQuery({
     queryKey: ["tapers"],
     queryFn: () => api<TaperPlan[]>("/api/taper-plans"),
   });
-  const active = (plans.data ?? []).find((plan) => plan.status === "active");
+  const medications = useQuery({
+    queryKey: ["medications"],
+    queryFn: () => api<Medication[]>("/api/medications"),
+  });
+  const timelinePlans = useMemo(
+    () => buildTimelinePlans(plans.data, medications.data),
+    [plans.data, medications.data],
+  );
+  const [planIndex, setPlanIndex] = useState(0);
+
+  useEffect(() => {
+    setPlanIndex(0);
+  }, [timelinePlans.map((plan) => plan.id).join(",")]);
+
+  const selected = timelinePlans[planIndex] ?? timelinePlans[0];
+  const swapTarget =
+    timelinePlans.length > 1 ? timelinePlans[(planIndex + 1) % timelinePlans.length] : undefined;
+  const hasSteroidPlan = (plans.data ?? []).some((plan) => plan.status === "active");
   const previous = (plans.data ?? []).filter((plan) => plan.status !== "active");
+  const loading = plans.isLoading || medications.isLoading;
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Taper" lede="The steroid plan that was typed in from clinic. Each step has its own dates." />
+      <PageHeader title="Taper" lede="Prescribed dose plans from clinic. Each medicine has its own dates." />
       <Disclaimer />
-      <Link className="inline-flex min-h-11 items-center rounded-2xl bg-teal px-4 text-sm font-semibold text-white" to="/taper/new">
-        {active ? "Replace plan" : "Add plan"}
+      <Link
+        className="inline-flex min-h-12 items-center justify-center rounded-full bg-lime px-5 text-sm font-extrabold text-white shadow-pop"
+        to="/taper/new"
+      >
+        {hasSteroidPlan ? "Replace plan" : "Add plan"}
       </Link>
-      {plans.isLoading ? <p className="text-sm">Loading…</p> : null}
-      {!active && !plans.isLoading ? (
+      {loading ? <p className="text-sm">Loading…</p> : null}
+      {!loading && timelinePlans.length === 0 ? (
         <Empty
           title="No taper yet"
           body="Enter the steps your nephrologist prescribed. Today will show the dose for the current date."
@@ -30,13 +53,19 @@ export function TaperPage() {
           action="Add the plan"
         />
       ) : null}
-      {active ? <Timeline plan={active} /> : null}
+      {selected ? (
+        <Timeline
+          plan={selected}
+          swapLabel={swapTarget ? swapTarget.medication_name : undefined}
+          onSwap={swapTarget ? () => setPlanIndex((index) => (index + 1) % timelinePlans.length) : undefined}
+        />
+      ) : null}
       {previous.length > 0 ? (
         <div className="space-y-2">
-          <h2 className="font-serif text-2xl">Earlier plans</h2>
+          <h2 className="text-2xl font-extrabold">Earlier plans</h2>
           {previous.map((plan) => (
             <Card key={plan.id}>
-              <p className="font-medium">{plan.title}</p>
+              <p className="font-extrabold">{plan.title}</p>
               <p className="text-sm text-ink/60">Replaced. Steps stay in the visit log.</p>
             </Card>
           ))}
@@ -46,21 +75,41 @@ export function TaperPage() {
   );
 }
 
-function Timeline({ plan }: { plan: TaperPlan }) {
+function Timeline({
+  plan,
+  swapLabel,
+  onSwap,
+}: {
+  plan: TaperPlan;
+  swapLabel?: string;
+  onSwap?: () => void;
+}) {
   return (
     <Card className="space-y-4">
-      <div>
-        <h2 className="font-serif text-2xl">{plan.medication_name}</h2>
-        <p className="text-sm text-ink/60">{plan.title}</p>
-        {plan.prescribed_note ? <p className="mt-1 text-sm">{plan.prescribed_note}</p> : null}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-extrabold">{plan.medication_name}</h2>
+          <p className="text-sm text-ink/60">{plan.title}</p>
+          {plan.prescribed_note ? <p className="mt-1 text-sm">{plan.prescribed_note}</p> : null}
+        </div>
+        {swapLabel && onSwap ? (
+          <Button className="shrink-0 px-3" type="button" variant="quiet" onClick={onSwap}>
+            {swapLabel}
+          </Button>
+        ) : null}
       </div>
-      <ol className="space-y-3 border-l-2 border-tide pl-4">
+      <ol className="space-y-3 border-l-2 border-teal/25 pl-4">
         {plan.steps.map((step) => (
-          <li key={step.id}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-teal">
+          <li
+            key={step.id}
+            className={
+              step.state === "current" ? "-ml-1 rounded-2xl bg-tide px-3 py-2" : step.state === "done" ? "opacity-70" : ""
+            }
+          >
+            <p className="text-xs font-extrabold uppercase tracking-wide text-teal">
               {step.state === "done" ? "Done" : step.state === "current" ? "Current" : "Upcoming"}
             </p>
-            <p className="font-serif text-2xl">
+            <p className="text-2xl font-extrabold">
               {step.dose_amount} {plan.dose_unit}
             </p>
             <p className="text-sm">

@@ -5,7 +5,10 @@
 body {
   margin: 0;
   min-height: 100dvh;
-  background: #d9d2c5;
+  color: #1c3228;
+  background:
+    radial-gradient(900px 420px at 50% -8%, #d8f59a 0%, rgba(216, 245, 154, 0) 70%),
+    linear-gradient(180deg, #e3f6b8 0%, #eef9d8 38%, #f6fbe8 100%);
 }
 
 #root {
@@ -19,7 +22,11 @@ select {
   font: inherit;
 }
 
+html.text-large {
+  font-size: 18px;
+}
+
 :focus-visible {
-  outline: 2px solid #0c6b66;
+  outline: 2px solid #34a853;
   outline-offset: 2px;
 }

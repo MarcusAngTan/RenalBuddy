@@ -17,7 +17,7 @@ import { VisitPage } from "./pages/Visit";
 function Private({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
-    return <p className="mx-auto max-w-[430px] bg-paper p-6 text-sm text-ink">Loading…</p>;
+    return <p className="mx-auto min-h-dvh max-w-[430px] bg-paper p-6 text-sm font-semibold text-ink">Loading…</p>;
   }
   if (!user) return <Navigate to="/login" replace />;
   return <Shell>{children}</Shell>;

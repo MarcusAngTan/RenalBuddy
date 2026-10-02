@@ -1,0 +1,17 @@
+{
+  "name": "RenalBuddy",
+  "short_name": "RenalBuddy",
+  "description": "A visit log for nephrotic syndrome between clinic appointments.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e8f6d6",
+  "theme_color": "#34a853",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

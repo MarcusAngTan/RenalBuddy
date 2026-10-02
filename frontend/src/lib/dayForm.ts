@@ -50,7 +50,7 @@ export function formFromToday(data: TodayPayload): DayForm {
         taper_step_id: data.taper.step.id,
         slot: "daily",
         label: data.taper.medication_name,
-        detail: `${data.taper.prescribed_dose} ${data.taper.dose_unit} prescribed`,
+        detail: "",
         status: data.taper.log_status,
         taken_dose: data.taper.taken_dose,
       })

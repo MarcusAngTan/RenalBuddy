@@ -1,0 +1,12 @@
+flowchart LR
+  patient[PatientOrCaregiver] --> app[ReactMobileWeb]
+  app -->|"JWT at this boundary"| api[FastAPI]
+  api --> mysql[MySQL]
+  api --> facts[FactsEngine compose]
+  facts -->|"JSON sections only"| narrator[Narrator]
+  narrator --> verifier[NumberVerifier]
+  verifier -->|pass| visit[VisitPack]
+  verifier -->|fail silent| template[TemplateText]
+  lexicon[PublicMedicineLexicon] --> explainer[Explainer]
+  explainer -->|unknown name| pharmacist[AskPharmacistLine]
+  facts -.->|no write-back| taper[(taper_steps)]
