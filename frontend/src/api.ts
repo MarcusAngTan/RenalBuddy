@@ -20,7 +20,7 @@ export function setToken(token: string | null) {
 
 function unreachableMessage(status: number) {
   if (status === 502 || status === 503 || status === 504) {
-    return "Could not reach the API. Start the backend (for example docker compose up) and keep it running.";
+    return "Could not reach the API. Start the backend (for example cd backend && docker compose up) and keep it running.";
   }
   if (status === 500) {
     return "Could not reach the API. Start the backend on port 8000 and refresh this page.";

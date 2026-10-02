@@ -1,14 +1,10 @@
 # RenalBuddy
 
-**Live demo:** [https://renalbuddy.onrender.com](https://renalbuddy.onrender.com) · **Source:** [github.com/MarcusAngTan/RenalBuddy](https://github.com/MarcusAngTan/RenalBuddy) · **Architecture:** [`docs/architecture.md`](docs/architecture.md) (includes trust-boundary diagram)
+**Live demo:** [https://renalbuddy.onrender.com](https://renalbuddy.onrender.com) · **Source:** [github.com/MarcusAngTan/RenalBuddy](https://github.com/MarcusAngTan/RenalBuddy)
 
 RenalBuddy is a **mobile-first web app** for people living with **nephrotic syndrome** (or a related glomerular disease) between nephrology visits. You type the plan the clinic already gave you, check in at home on protein, weight, swelling, medicines, and how you feel, then open **Visit** for a structured summary to take to the next appointment.
 
 It is a personal log, not medical advice. It does **not** calculate a dose, invent a taper, read a dipstick by camera, or label protein as relapse or remission. Optional AI only restates facts you already logged (see [Safety](#safety)).
-
-Trust boundaries and system overview: [`docs/architecture.md`](docs/architecture.md). Form submission checklist: [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
-
-Word (`.docx`) and PowerPoint (`.pptx`) files are **not** stored in this repo (see `.gitignore`); keep any architecture **PPT** on your machine for the competition upload field.
 
 ## Live demo (public HTTPS)
 
@@ -43,9 +39,10 @@ You need **two processes**: the API + database, and the Vite dev server (the UI)
 
 ### Step 1 — API and database (Terminal 1)
 
-From the repo root:
+From the `backend` directory:
 
 ```bash
+cd backend
 docker compose up --build
 ```
 
@@ -57,7 +54,7 @@ curl -s http://127.0.0.1:8000/api/health
 
 You should see `{"status":"ok"}`.
 
-Compose sets a local `JWT_SECRET` for development only. For anything public or judged, set a strong secret in `docker-compose.yml` under the `api` service `environment`.
+Compose sets a local `JWT_SECRET` for development only. For anything public or judged, set a strong secret in `backend/docker-compose.yml` under the `api` service `environment`.
 
 ### Step 2 — Website (Terminal 2)
 
@@ -108,15 +105,15 @@ On iOS Safari or Android Chrome, you can use **Add to Home Screen** / **Install 
 
 | Symptom | What to check |
 | --- | --- |
-| **Loading…** forever or sign-in fails | API not running, or database not ready. Terminal 1: `docker compose up --build`. Look for `Application startup complete` on the API. |
+| **Loading…** forever or sign-in fails | API not running, or database not ready. Terminal 1: `cd backend && docker compose up --build`. Look for `Application startup complete` on the API. |
 | **Could not sign in** with demo email | On production, wait for deploy then use **Sign in as demo**. Locally, ensure the API is up so the demo user is seeded; or register once with that email. |
 | **Demo data** errors | Sample week only loads when the account has no clinical data yet. Use a new account or delete data from **Profile**. |
-| Port **8000** in use | Stop the other process or change the host port in `docker-compose.yml`. |
+| Port **8000** in use | Stop the other process or change the host port in `backend/docker-compose.yml`. |
 | Port **5173** in use | Stop the other Vite dev server or set another port: `npm run dev -- --port 5174`. |
 
 ## Deploy on Render (free)
 
-One HTTPS URL serves the built React app and `/api` from the same FastAPI process (`Dockerfile` at repo root). Database: [TiDB Cloud Serverless](https://tidbcloud.com/) free tier (MySQL-compatible) so existing Alembic migrations and `mysql+pymysql` keep working.
+One HTTPS URL serves the built React app and `/api` from the same FastAPI process (`backend/Dockerfile.production`, build context = repo root). Database: [TiDB Cloud Serverless](https://tidbcloud.com/) free tier (MySQL-compatible) so existing Alembic migrations and `mysql+pymysql` keep working.
 
 ### 1. TiDB Serverless
 
@@ -129,7 +126,7 @@ One HTTPS URL serves the built React app and `/api` from the same FastAPI proces
 ### 2. Render web service
 
 1. [Render](https://render.com) → **New** → **Blueprint** (or **Web Service** → connect this GitHub repo).
-2. Use [`render.yaml`](render.yaml): Docker build from repo root, health check `/api/health`.
+2. Use [`backend/render.yaml`](backend/render.yaml) (Docker build from repo root, health check `/api/health`).
 3. Environment variables:
    - `DATABASE_URL` — TiDB string from step 1.
    - `JWT_SECRET` — long random string (32+ bytes); Render can generate one.
@@ -148,7 +145,7 @@ curl -s https://renalbuddy.onrender.com/api/health
 **Local production-like build (optional):**
 
 ```bash
-docker build -t renalbuddy .
+docker build -f backend/Dockerfile.production -t renalbuddy .
 docker run --rm -p 8000:8000 \
   -e DATABASE_URL='mysql+pymysql://...' \
   -e JWT_SECRET='local-prod-test-secret-min-32-chars' \
@@ -175,7 +172,7 @@ If you prefer a local MySQL instead of Compose:
 
 Keep MySQL data in a **persistent** data directory, not `/tmp`, so your log survives restarts.
 
-If you already run a project-specific MySQL on another port (for example **3307** on this Mac), set `DATABASE_URL` in `backend/.env` to match that port. Compose uses **3306** on the host when you `docker compose up`.
+If you already run a project-specific MySQL on another port (for example **3307** on this Mac), set `DATABASE_URL` in `backend/.env` to match that port. Compose uses **3306** on the host when you `docker compose up` from `backend`.
 
 ## What AI does, and does not do
 

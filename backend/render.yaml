@@ -1,12 +1,12 @@
-# Render Blueprint: one free web service + external TiDB Serverless (MySQL).
-# Required: DATABASE_URL (TiDB). JWT_SECRET is generated. CORS adds RENDER_EXTERNAL_URL automatically in app code.
+# Render Blueprint: run from repo root or point Render at this file.
+# Docker context must be the repository root (parent of frontend/ and backend/).
 services:
   - type: web
     name: renalbuddy
     runtime: docker
     plan: free
     dockerContext: .
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./backend/Dockerfile.production
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL

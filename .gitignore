@@ -15,10 +15,6 @@ __pycache__/
 htmlcov/
 .vite/
 *.db
-*.docx
-*.doc
-*.pptx
-*.ppt
 .DS_Store
 Thumbs.db
 *.log

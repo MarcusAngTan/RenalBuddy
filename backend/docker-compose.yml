@@ -14,7 +14,7 @@ services:
       timeout: 5s
       retries: 20
   api:
-    build: ./backend
+    build: .
     ports:
       - "8000:8000"
     environment:

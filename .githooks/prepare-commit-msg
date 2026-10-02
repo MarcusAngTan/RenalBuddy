@@ -1,7 +1,0 @@
-#!/bin/sh
-# Strip Cursor co-author so GitHub does not list cursoragent as a contributor.
-if [ -n "${1-}" ] && [ -f "$1" ]; then
-  tmp=$(mktemp)
-  grep -v '^Co-authored-by: Cursor <cursoragent@cursor.com>$' "$1" >"$tmp" || true
-  mv "$tmp" "$1"
-fi

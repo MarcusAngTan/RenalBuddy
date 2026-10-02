@@ -1,9 +1,12 @@
 # Production image: React build + FastAPI API on one port (Render / single HTTPS URL).
+# Build from repo root: docker build -f backend/Dockerfile.production -t renalbuddy .
 FROM node:20-bookworm-slim AS frontend-build
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci
-COPY frontend/ .
+COPY frontend/index.html frontend/vite.config.ts frontend/tsconfig.json frontend/tailwind.config.js frontend/postcss.config.js ./
+COPY frontend/src ./src
+COPY frontend/public ./public
 ENV VITE_API_URL=
 RUN npm run build
 
