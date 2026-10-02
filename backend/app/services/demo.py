@@ -44,18 +44,30 @@ def load_sample_week(db: Session, profile: PatientProfile) -> dict:
     today = date.today()
     day_a = today - timedelta(days=2)
     day_b = today - timedelta(days=1)
-    profile.last_appointment_on = today - timedelta(days=4)
+
+    # Shared visit milestones: both medicines start together; each later step shares the same start date.
+    plan_start = today - timedelta(days=10)
+    step1_end = today - timedelta(days=4)
+    step2_start = today - timedelta(days=3)
+    step2_end = today + timedelta(days=3)
+    step3_start = today + timedelta(days=4)
+    step3_end = today + timedelta(days=10)
+    step4_start = today + timedelta(days=11)
+    step4_end = today + timedelta(days=24)
+    maintain_end = today + timedelta(days=60)
+
+    profile.last_appointment_on = step2_start
     profile.next_appointment_on = today + timedelta(days=14)
 
     med = Medication(
         user_id=profile.user_id,
-        name="Lisinopril",
-        dose_amount=5,
+        name="Cyclosporine",
+        dose_amount=50,
         dose_unit="mg",
         schedule="daily",
         is_steroid=False,
         status="active",
-        started_on=day_a,
+        started_on=plan_start,
         notes=None,
         created_at=utcnow(),
         updated_at=utcnow(),
@@ -67,9 +79,9 @@ def load_sample_week(db: Session, profile: PatientProfile) -> dict:
             user_id=profile.user_id,
             medication_id=med.id,
             event_type="started",
-            dose_amount=5,
+            dose_amount=50,
             dose_unit="mg",
-            event_on=day_a,
+            event_on=plan_start,
             note=None,
             created_at=utcnow(),
         )
@@ -83,14 +95,15 @@ def load_sample_week(db: Session, profile: PatientProfile) -> dict:
         prescribed_note="Sample plan typed in as if it came from clinic",
         status="active",
         created_at=utcnow(),
+        authored_by_user_id=profile.user_id,
     )
     db.add(plan)
     db.flush()
     steps = [
-        (1, 40, today - timedelta(days=10), today - timedelta(days=4), "Once each morning"),
-        (2, 30, today - timedelta(days=3), today + timedelta(days=3), "Once each morning"),
-        (3, 20, today + timedelta(days=4), today + timedelta(days=10), "Once each morning"),
-        (4, 10, today + timedelta(days=11), today + timedelta(days=24), "Once each morning"),
+        (1, 40, plan_start, step1_end, "Once each morning"),
+        (2, 30, step2_start, step2_end, "Once each morning"),
+        (3, 20, step3_start, step3_end, "Once each morning"),
+        (4, 10, step4_start, step4_end, "Once each morning"),
     ]
     step_rows = []
     for number, dose, start, end, instruction in steps:
@@ -106,6 +119,36 @@ def load_sample_week(db: Session, profile: PatientProfile) -> dict:
         step_rows.append(row)
     db.flush()
     current = step_rows[1]
+
+    cni_plan = TaperPlan(
+        user_id=profile.user_id,
+        title="Cyclosporine plan",
+        medication_name="Cyclosporine",
+        dose_unit="mg",
+        prescribed_note="Clinic titration plan",
+        status="active",
+        created_at=utcnow(),
+        authored_by_user_id=profile.user_id,
+    )
+    db.add(cni_plan)
+    db.flush()
+    cni_steps = [
+        (1, 25, plan_start, step1_end, "Once each evening"),
+        (2, 50, step2_start, step2_end, "Once each evening"),
+        (3, 50, step3_start, maintain_end, "Once each evening"),
+    ]
+    for number, dose, start, end, instruction in cni_steps:
+        db.add(
+            TaperStep(
+                plan_id=cni_plan.id,
+                step_number=number,
+                dose_amount=dose,
+                start_on=start,
+                end_on=end,
+                instruction=instruction,
+                authored_at=utcnow(),
+            )
+        )
 
     def add_dose(day: date, status: str, taken, prescribed, medication_id=None, taper_step_id=None):
         db.add(
@@ -125,7 +168,7 @@ def load_sample_week(db: Session, profile: PatientProfile) -> dict:
         )
 
     for day in (day_a, day_b, today):
-        add_dose(day, "taken", 5, 5, medication_id=med.id)
+        add_dose(day, "taken", 50, 50, medication_id=med.id)
     add_dose(day_a, "taken", 30, 30, taper_step_id=current.id)
     add_dose(day_b, "missed", None, 30, taper_step_id=current.id)
     add_dose(today, "different_dose", 15, 30, taper_step_id=current.id)
@@ -139,7 +182,7 @@ def load_sample_week(db: Session, profile: PatientProfile) -> dict:
     db.add(BodyLog(user_id=profile.user_id, log_on=today, weight_kg=62.8, oedema_score=1, note=None))
 
     db.add(SideEffectLog(user_id=profile.user_id, log_on=day_a, effect_code="sleep", severity=1, note=None))
-    db.add(SideEffectLog(user_id=profile.user_id, log_on=day_b, effect_code="mood", severity=2, note=None))
+    db.add(SideEffectLog(user_id=profile.user_id, log_on=day_b, effect_code="infection_concern", severity=2, note=None))
     db.add(SideEffectLog(user_id=profile.user_id, log_on=today, effect_code="appetite", severity=2, note=None))
 
     db.add(WellbeingCheckin(user_id=profile.user_id, log_on=day_a, mood=4, energy=3, sleep_quality=3, note=None))

@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.constants import DIPSTICKS, DOSE_STATUSES, EFFECTS, INTERESTS, SCHEDULES, SLOTS
+from app.constants import DIPSTICKS, DOSE_STATUSES, EFFECTS, INTERESTS, LOG_FOR_OPTIONS, SCHEDULES, SLOTS
 
 
 def _clean(value: str) -> str:
@@ -53,6 +53,11 @@ class MeOut(BaseModel):
     coping_interests: list[str]
     disclaimer_accepted_at: datetime
     has_clinical_data: bool
+    logs_for: str = "self"
+    days_logged_this_interval: int = 0
+    days_in_interval: int = 0
+    open_questions: int = 0
+    visit_opened_at: datetime | None = None
 
 
 class TokenOut(BaseModel):
@@ -66,6 +71,8 @@ class ProfilePatch(BaseModel):
     last_appointment_on: date | None = None
     next_appointment_on: date | None = None
     coping_interests: list[str] | None = None
+    logs_for: Literal["self", "child"] | None = None
+    mark_visit_opened: bool | None = None
 
     @field_validator("display_name")
     @classmethod
@@ -89,6 +96,16 @@ class ProfilePatch(BaseModel):
             if item not in cleaned:
                 cleaned.append(item)
         return cleaned
+
+
+    @field_validator("logs_for")
+    @classmethod
+    def logs_for_known(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if value not in LOG_FOR_OPTIONS:
+            raise ValueError("Choose who this log is for.")
+        return value
 
 
 class MedicationIn(BaseModel):
@@ -451,6 +468,7 @@ class SummaryOut(BaseModel):
     summary_text: str
     summary_json: dict
     created_at: datetime | None
+    narration: dict | None = None
 
 
 class SummaryCreate(BaseModel):
@@ -467,6 +485,22 @@ class CloseIn(BaseModel):
 class CloseOut(BaseModel):
     last_appointment_on: date
     summary: SummaryOut
+
+
+class MedicineExplainOut(BaseModel):
+    name: str
+    known: bool
+    class_name: str | None
+    purpose: str
+    dose_note: str
+
+
+class QuestionSuggestionOut(BaseModel):
+    id: str
+    body: str
+    reason: str
+    source: str
+    already_saved: bool
 
 
 class DipstickOut(BaseModel):

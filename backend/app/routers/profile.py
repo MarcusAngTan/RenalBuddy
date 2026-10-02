@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import PatientProfile, User
+from app.models import PatientProfile, User, utcnow
 from app.schemas import MeOut, ProfilePatch
 from app.security import get_current_user
 from app.services.account import to_me
@@ -26,6 +26,10 @@ def update_profile(
         profile.next_appointment_on = data["next_appointment_on"]
     if "coping_interests" in data and data["coping_interests"] is not None:
         profile.coping_interests = data["coping_interests"]
+    if "logs_for" in data and data["logs_for"] is not None:
+        profile.logs_for = data["logs_for"]
+    if data.get("mark_visit_opened"):
+        profile.visit_opened_at = utcnow()
     db.commit()
     db.refresh(user)
     return to_me(db, user)

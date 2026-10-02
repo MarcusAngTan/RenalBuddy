@@ -69,7 +69,11 @@ def create_plan(
     ordered = _validate_steps(body.steps)
     (
         db.query(TaperPlan)
-        .filter(TaperPlan.user_id == user.id, TaperPlan.status == "active")
+        .filter(
+            TaperPlan.user_id == user.id,
+            TaperPlan.status == "active",
+            TaperPlan.medication_name == body.medication_name,
+        )
         .update({TaperPlan.status: "replaced"})
     )
     plan = TaperPlan(
@@ -80,6 +84,7 @@ def create_plan(
         prescribed_note=body.prescribed_note,
         status="active",
         created_at=utcnow(),
+        authored_by_user_id=user.id,
     )
     db.add(plan)
     db.flush()
@@ -92,6 +97,7 @@ def create_plan(
                 start_on=step.start_on,
                 end_on=step.end_on,
                 instruction=step.instruction,
+                authored_at=utcnow(),
             )
         )
     db.commit()

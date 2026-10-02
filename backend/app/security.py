@@ -25,7 +25,7 @@ def create_token(user_id: int) -> str:
     settings = get_settings()
     payload = {
         "sub": str(user_id),
-        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=settings.jwt_hours),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 

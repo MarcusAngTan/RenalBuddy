@@ -8,9 +8,18 @@ from app.models import SupportResource
 def seed() -> None:
     db: Session = sessionmaker(bind=get_engine(), autoflush=False, autocommit=False)()
     try:
-        if db.query(SupportResource).count() == 0:
-            for item in RESOURCES:
+        existing = {row.title: row for row in db.query(SupportResource).all()}
+        keep = {item["title"] for item in RESOURCES}
+        for item in RESOURCES:
+            row = existing.get(item["title"])
+            if row is None:
                 db.add(SupportResource(**item))
-            db.commit()
+            else:
+                row.url = item["url"]
+                row.description = item["description"]
+        for title, row in existing.items():
+            if title not in keep:
+                db.delete(row)
+        db.commit()
     finally:
         db.close()

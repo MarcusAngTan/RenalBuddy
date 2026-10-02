@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import PatientProfile, User, utcnow
 from app.schemas import LoginIn, MeOut, RegisterIn, TokenOut
+from app.limiter import rate_limit
 from app.security import create_token, get_current_user, hash_password, verify_password
 from app.services.account import to_me
 
@@ -11,7 +12,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TokenOut)
-def register(body: RegisterIn, db: Session = Depends(get_db)):
+def register(body: RegisterIn, request: Request, db: Session = Depends(get_db)):
+    rate_limit(request, limit=8, window_seconds=60)
     if not body.disclaimer_accepted:
         raise HTTPException(status_code=400, detail="Accept the disclaimer to create an account.")
     existing = db.query(User).filter(User.email == body.email).one_or_none()
@@ -32,6 +34,8 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
             next_appointment_on=None,
             coping_interests=[],
             disclaimer_accepted_at=utcnow(),
+            logs_for="self",
+            visit_opened_at=None,
         )
     )
     db.commit()
@@ -40,7 +44,8 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenOut)
-def login(body: LoginIn, db: Session = Depends(get_db)):
+def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
+    rate_limit(request, limit=8, window_seconds=60)
     user = db.query(User).filter(User.email == body.email).one_or_none()
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Email or password is incorrect.")

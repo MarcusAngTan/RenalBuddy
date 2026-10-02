@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models import PatientProfile, User, VisitSummary
 from app.schemas import CloseIn, CloseOut, SummaryCreate, SummaryOut
 from app.security import get_current_user
+from app.services.narrator import narrate
 from app.services.summary import PeriodError, build_summary, save_summary
 
 router = APIRouter(tags=["summaries"])
@@ -18,7 +19,7 @@ def _profile(db: Session, user_id: int) -> PatientProfile:
     return profile
 
 
-def _out(row: VisitSummary) -> SummaryOut:
+def _out(row: VisitSummary, narration: dict | None = None) -> SummaryOut:
     return SummaryOut(
         id=row.id,
         period_start=row.period_start,
@@ -26,6 +27,7 @@ def _out(row: VisitSummary) -> SummaryOut:
         summary_text=row.summary_text,
         summary_json=row.summary_json,
         created_at=row.created_at,
+        narration=narration or row.summary_json.get("narration"),
     )
 
 
@@ -40,6 +42,8 @@ def preview(
         text, payload, period_start, period_end = build_summary(db, _profile(db, user.id), start, end)
     except PeriodError as exc:
         raise HTTPException(status_code=400, detail=exc.message) from exc
+    narration = narrate(payload)
+    payload = {**payload, "narration": narration}
     return SummaryOut(
         id=None,
         period_start=period_start,
@@ -47,6 +51,7 @@ def preview(
         summary_text=text,
         summary_json=payload,
         created_at=None,
+        narration=narration,
     )
 
 

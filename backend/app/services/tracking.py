@@ -47,13 +47,31 @@ def active_on(med: Medication, day: date) -> bool:
     return True
 
 
-def active_plan(db: Session, user_id: int) -> TaperPlan | None:
-    return (
+STEROID_TAPER_NAMES = frozenset({"prednisolone", "prednisone", "methylprednisolone", "dexamethasone"})
+
+
+def steroid_taper_plan(db: Session, user_id: int) -> TaperPlan | None:
+    plans = (
         db.query(TaperPlan)
         .filter(TaperPlan.user_id == user_id, TaperPlan.status == "active")
-        .order_by(TaperPlan.created_at.desc())
-        .first()
+        .order_by(TaperPlan.created_at.asc())
+        .all()
     )
+    if not plans:
+        return None
+    for plan in plans:
+        if plan.medication_name.lower() in STEROID_TAPER_NAMES:
+            return plan
+    steroid_med_names = {
+        med.name.lower()
+        for med in db.query(Medication)
+        .filter(Medication.user_id == user_id, Medication.is_steroid.is_(True), Medication.status == "active")
+        .all()
+    }
+    for plan in plans:
+        if plan.medication_name.lower() in steroid_med_names:
+            return plan
+    return plans[0]
 
 
 def steps_for(db: Session, plan_id: int) -> list[TaperStep]:
@@ -143,7 +161,7 @@ def build_today(db: Session, user_id: int, day: date, profile: PatientProfile) -
             }
         )
 
-    plan = active_plan(db, user_id)
+    plan = steroid_taper_plan(db, user_id)
     taper_payload = None
     if plan is not None:
         steps = steps_for(db, plan.id)

@@ -193,6 +193,15 @@ def test_visit_loop(client):
     assert "dose changed for Lisinopril to 10 mg" in text
     assert "relapse" not in text.lower()
     assert "recommended" not in text.lower()
+    assert "remission" not in text.lower()
+    assert "you should" not in text.lower()
+    assert "This pack is incomplete." in text
+    narration = preview.json().get("narration") or preview.json()["summary_json"].get("narration")
+    assert narration
+    assert narration["verified"] is True
+    assert "relapse" not in narration["text"].lower()
+    assert narration.get("blocks")
+    assert any(block["title"] == "Steroid taper" for block in narration["blocks"])
 
     saved = client.post("/api/summaries", headers=headers, json={})
     assert saved.status_code == 200
@@ -208,6 +217,7 @@ def test_visit_loop(client):
     resources = client.get("/api/resources", headers=headers)
     assert resources.status_code == 200
     assert any(item["title"] == "NephCure" for item in resources.json())
+    assert any("NUH" in item["title"] for item in resources.json())
 
 
 def test_sample_week_then_blocks_a_second_load(client):
@@ -218,6 +228,13 @@ def test_sample_week_then_blocks_a_second_load(client):
     assert today.status_code == 200
     assert today.json()["taper"]["medication_name"] == "Prednisolone"
     assert today.json()["taper"]["prescribed_dose"] == 30
+    plans = client.get("/api/taper-plans", headers=headers)
+    assert plans.status_code == 200
+    active = [plan for plan in plans.json() if plan["status"] == "active"]
+    pred = next(plan for plan in active if plan["medication_name"] == "Prednisolone")
+    liso = next(plan for plan in active if plan["medication_name"] == "Cyclosporine")
+    assert pred["steps"][0]["start_on"] == liso["steps"][0]["start_on"]
+    assert pred["steps"][1]["start_on"] == liso["steps"][1]["start_on"]
     preview = client.get("/api/summaries/preview", headers=headers)
     text = preview.json()["summary_text"]
     assert "missed 1 day" in text
@@ -225,3 +242,79 @@ def test_sample_week_then_blocks_a_second_load(client):
     assert "Face looked puffier" in text
     again = client.post("/api/demo/sample-week", headers=headers)
     assert again.status_code == 400
+
+
+def test_medicine_explainer_and_question_suggestions(client):
+    headers = _auth(client, "lex@example.com")
+    known = client.get("/api/medicines/explain", headers=headers, params={"name": "Prednisolone"})
+    assert known.status_code == 200
+    assert known.json()["known"] is True
+    assert "typed plan" in known.json()["dose_note"].lower()
+    unknown = client.get("/api/medicines/explain", headers=headers, params={"name": "Unobtainium"})
+    assert unknown.status_code == 200
+    assert unknown.json()["known"] is False
+    assert "pharmacist" in unknown.json()["purpose"].lower()
+    loaded = client.post("/api/demo/sample-week", headers=headers)
+    assert loaded.status_code == 200
+    suggestions = client.get("/api/questions/suggestions", headers=headers)
+    assert suggestions.status_code == 200
+    bodies = [item["body"] for item in suggestions.json()]
+    assert any("vaccines" in body.lower() for body in bodies)
+    assert any("3+" in body or "dipstick" in body.lower() for body in bodies)
+    assert all("relapse" not in body.lower() for body in bodies)
+
+
+def test_account_export_and_delete(client):
+    headers = _auth(client, "gone@example.com")
+    client.post("/api/demo/sample-week", headers=headers)
+    exported = client.get("/api/account/export", headers=headers)
+    assert exported.status_code == 200
+    payload = exported.json()
+    assert payload["user"]["email"] == "gone@example.com"
+    assert any(med["name"] == "Cyclosporine" for med in payload["medications"])
+    deleted = client.delete("/api/account", headers=headers)
+    assert deleted.status_code == 200
+    me = client.get("/api/auth/me", headers=headers)
+    assert me.status_code == 401
+
+
+def test_crisis_copy_is_hard_coded():
+    from app.constants import CRISIS_COPY
+
+    assert "995" in CRISIS_COPY
+    assert "1767" in CRISIS_COPY
+    assert "iasp.info" in CRISIS_COPY.lower()
+
+
+def test_narrate_structured_blocks_skip_empty_sections():
+    from app.services.narrator import narrate
+
+    payload = {
+        "period_start": "2026-09-01",
+        "period_end": "2026-09-10",
+        "coverage": {"days_logged": 3, "days_in_interval": 10, "incomplete": True},
+        "sections": [
+            {"key": "coverage", "title": "How complete this pack is", "lines": ["Logged 3 of 10 days in this interval."]},
+            {"key": "medicines", "title": "Medicines", "lines": ["Not logged."]},
+            {"key": "dipstick", "title": "Urine dipstick", "lines": ["1 Sep 2026: 2+."]},
+        ],
+    }
+    result = narrate(payload)
+    titles = [block["title"] for block in result["blocks"]]
+    assert "Medicines" not in titles
+    assert "Urine dipstick" in titles
+    assert result["blocks"][0]["lines"] == ["Logged 3 of 10 days in this interval."]
+
+
+def test_narrator_discards_invented_numbers():
+    from app.services.narrator import verify_narration
+
+    payload = {
+        "period_start": "2026-09-01",
+        "period_end": "2026-09-10",
+        "coverage": {"days_logged": 3, "days_in_interval": 10, "incomplete": True},
+        "sections": [{"title": "Urine dipstick", "lines": ["1 Sep 2026: 2+."]}],
+    }
+    assert verify_narration("Logged 3 of 10 days. Urine dipstick: 1 Sep 2026: 2+.", payload) is True
+    assert verify_narration("Protein 99 means relapse.", payload) is False
+

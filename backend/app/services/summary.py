@@ -114,6 +114,7 @@ class BodyFact:
 
 @dataclass
 class EffectFact:
+    log_on: date
     effect_code: str
     severity: int
 
@@ -139,6 +140,8 @@ class Facts:
     checkins: list[CheckinFact]
     notes: list[str]
     questions: list[str]
+    days_logged: int = 0
+    days_in_interval: int = 0
 
 
 def _section(key: str, title: str, lines: list[str]) -> dict:
@@ -265,7 +268,15 @@ def compose(facts: Facts) -> tuple[str, dict]:
     note_lines = [f"“{note}”" for note in facts.notes]
     question_lines = [question for question in facts.questions]
 
+    days_in_interval = facts.days_in_interval or ((facts.period_end - facts.period_start).days + 1)
+    days_logged = facts.days_logged
+    incomplete = days_logged < days_in_interval
+    coverage_line = f"Logged {days_logged} of {days_in_interval} days in this interval."
+    if incomplete:
+        coverage_line += " This pack is incomplete."
+
     sections = [
+        _section("coverage", "How complete this pack is", [coverage_line]),
         _section("medicines", "Medicines", medicine_lines),
         _section("taper", "Steroid taper", taper_lines),
         _section("dipstick", "Urine dipstick", dip_lines),
@@ -278,6 +289,9 @@ def compose(facts: Facts) -> tuple[str, dict]:
     header = [
         "RenalBuddy visit log",
         f"{fmt_date(facts.period_start)} to {fmt_date(facts.period_end)}",
+        "",
+        coverage_line,
+        "This app will not tell you when to call. If you are worried, call the team.",
         "",
         "This is a personal log of what was entered in the app. It is not medical advice. "
         "Prescribed doses are the plan that was typed in. Logged doses are what was recorded as taken.",
@@ -292,6 +306,39 @@ def compose(facts: Facts) -> tuple[str, dict]:
     payload = {
         "period_start": facts.period_start.isoformat(),
         "period_end": facts.period_end.isoformat(),
+        "coverage": {
+            "days_logged": days_logged,
+            "days_in_interval": days_in_interval,
+            "incomplete": incomplete,
+        },
+        "timeline": {
+            "dipstick": [{"on": dip.logged_on.isoformat(), "result": dip.result} for dip in facts.dips],
+            "weight": [
+                {"on": row.log_on.isoformat(), "kg": float(row.weight_kg)}
+                for row in facts.bodies
+                if row.weight_kg is not None
+            ],
+            "oedema": [
+                {"on": row.log_on.isoformat(), "score": row.oedema_score}
+                for row in facts.bodies
+                if row.oedema_score is not None
+            ],
+            "effects": [
+                {"on": row.log_on.isoformat(), "code": row.effect_code, "severity": row.severity}
+                for row in facts.effects
+            ],
+            "taper_steps": [
+                {
+                    "title": taper.title,
+                    "start_on": step.start_on.isoformat(),
+                    "end_on": step.end_on.isoformat(),
+                    "dose": float(step.dose_amount),
+                    "unit": step.dose_unit,
+                }
+                for taper in facts.tapers
+                for step in taper.steps
+            ],
+        },
         "sections": sections,
     }
     return text, payload
@@ -447,6 +494,18 @@ def load_facts(db: Session, user_id: int, start: date, end: date) -> Facts:
         .order_by(DoctorQuestion.created_at)
         .all()
     )
+    logged_days: set[date] = set()
+    for row, _med in dose_rows:
+        logged_days.add(row.log_on)
+    for row in dips:
+        logged_days.add(row.logged_at.date())
+    for row in bodies:
+        logged_days.add(row.log_on)
+    for row in effects:
+        logged_days.add(row.log_on)
+    for row in checkins:
+        logged_days.add(row.log_on)
+    days_in_interval = (end - start).days + 1
     return Facts(
         period_start=start,
         period_end=end,
@@ -455,12 +514,14 @@ def load_facts(db: Session, user_id: int, start: date, end: date) -> Facts:
         tapers=taper_facts,
         dips=[DipFact(row.logged_at.date(), row.result) for row in dips],
         bodies=[BodyFact(row.log_on, row.weight_kg, row.oedema_score) for row in bodies],
-        effects=[EffectFact(row.effect_code, row.severity) for row in effects],
+        effects=[EffectFact(row.log_on, row.effect_code, row.severity) for row in effects],
         checkins=[
             CheckinFact(row.log_on, row.mood, row.energy, row.sleep_quality) for row in checkins
         ],
         notes=[_clip(row.body) for row in notes],
         questions=[row.body for row in questions],
+        days_logged=len(logged_days),
+        days_in_interval=days_in_interval,
     )
 
 
@@ -471,10 +532,14 @@ def _clip(text: str, limit: int = 240) -> str:
     return compact[: limit - 1].rstrip() + "…"
 
 
+from app.services.narrator import narrate
+
+
 def build_summary(db: Session, profile: PatientProfile, start: date | None, end: date | None) -> tuple[str, dict, date, date]:
     period_start, period_end = resolve_period(profile, start, end, date.today())
     facts = load_facts(db, profile.user_id, period_start, period_end)
     text, payload = compose(facts)
+    payload["narration"] = narrate(payload)
     return text, payload, period_start, period_end
 
 

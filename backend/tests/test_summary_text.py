@@ -45,10 +45,12 @@ def test_summary_uses_logged_values_without_clinical_labels():
             BodyFact(today - timedelta(days=1), 62.4, 1),
             BodyFact(today, 63.1, 2),
         ],
-        effects=[EffectFact("sleep", 2), EffectFact("sleep", 3)],
+        effects=[EffectFact(today - timedelta(days=1), "sleep", 2), EffectFact(today, "sleep", 3)],
         checkins=[CheckinFact(today - timedelta(days=1), 2, 2, 2), CheckinFact(today, 4, 3, 3)],
         notes=["Face looked puffy."],
         questions=["Can we talk about the 3+ result?"],
+        days_logged=2,
+        days_in_interval=4,
     )
     text, payload = compose(facts)
     assert "prescribed 30 mg" in text
@@ -56,8 +58,14 @@ def test_summary_uses_logged_values_without_clinical_labels():
     assert "missed 1 day" in text
     assert "Highest 3+" in text
     assert "Face looked puffy." in text
+    assert "Logged 2 of 4 days" in text
+    assert "This pack is incomplete." in text
+    assert "will not tell you when to call" in text
+    assert "every Monday" not in text
     assert "relapse" not in text.lower()
     assert "recommended" not in text.lower()
     assert "remission" not in text.lower()
-    assert payload["sections"][0]["title"] == "Medicines"
+    assert "you should" not in text.lower()
+    titles = [section["title"] for section in payload["sections"]]
+    assert "Medicines" in titles
     assert any(section["lines"] == ["Not logged."] for section in payload["sections"])

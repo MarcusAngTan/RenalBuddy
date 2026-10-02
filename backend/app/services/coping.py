@@ -40,10 +40,23 @@ SUGGESTIONS = [
 ]
 
 
-def suggestions_for(tags: list[str] | None) -> tuple[list[dict], bool]:
+def suggestions_for(tags: list[str] | None, mood: int | None = None, energy: int | None = None) -> tuple[list[dict], bool]:
     chosen = [tag for tag in (tags or []) if tag in INTERESTS]
     matched = [item for item in SUGGESTIONS if set(item["tags"]).intersection(chosen)]
-    if matched:
-        return matched, False
-    defaults = [item for item in SUGGESTIONS if item["id"] in {"breath", "rest"}]
-    return defaults, True
+    using_defaults = False
+    if not matched:
+        matched = [item for item in SUGGESTIONS if item["id"] in {"breath", "rest"}]
+        using_defaults = True
+
+    def sort_key(item: dict) -> tuple[int, str]:
+        tags = set(item["tags"])
+        if energy is not None and energy <= 2 and "rest" in tags:
+            return (0, item["id"])
+        if mood is not None and mood <= 2 and tags.intersection({"music", "talking"}):
+            return (1, item["id"])
+        if energy is not None and energy <= 2 and "breathing" in tags:
+            return (2, item["id"])
+        return (3, item["id"])
+
+    matched = sorted(matched, key=sort_key)
+    return matched, using_defaults

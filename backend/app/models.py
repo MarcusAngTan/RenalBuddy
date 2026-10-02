@@ -30,6 +30,8 @@ class PatientProfile(Base):
     next_appointment_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     coping_interests: Mapped[list | None] = mapped_column(JSON, nullable=True)
     disclaimer_accepted_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    logs_for: Mapped[str] = mapped_column(String(16), nullable=False, default="self")
+    visit_opened_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class Medication(Base):
@@ -78,6 +80,7 @@ class TaperPlan(Base):
     prescribed_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
+    authored_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
 
 class TaperStep(Base):
@@ -91,6 +94,7 @@ class TaperStep(Base):
     start_on: Mapped[date] = mapped_column(Date, nullable=False)
     end_on: Mapped[date] = mapped_column(Date, nullable=False)
     instruction: Mapped[str | None] = mapped_column(Text, nullable=True)
+    authored_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
 
 
 class DoseLog(Base):

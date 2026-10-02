@@ -1,8 +1,9 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.constants import RESOURCES
 from app.database import get_db
 from app.models import DoctorQuestion, JournalEntry, SupportResource, User, utcnow
 from app.schemas import (
@@ -126,11 +127,18 @@ def update_question(
 @router.get("/resources", response_model=list[ResourceOut])
 def resources(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     del user
-    return db.query(SupportResource).order_by(SupportResource.id).all()
+    rank = {item["title"]: index for index, item in enumerate(RESOURCES)}
+    rows = db.query(SupportResource).all()
+    return sorted(rows, key=lambda row: rank.get(row.title, 99))
 
 
 @router.get("/coping", response_model=CopingListOut)
-def coping(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def coping(
+    mood: int | None = Query(default=None, ge=1, le=5),
+    energy: int | None = Query(default=None, ge=1, le=5),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     me = to_me(db, user)
-    items, using_defaults = suggestions_for(me.coping_interests)
+    items, using_defaults = suggestions_for(me.coping_interests, mood=mood, energy=energy)
     return {"suggestions": items, "using_defaults": using_defaults}
