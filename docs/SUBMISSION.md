@@ -1,6 +1,6 @@
 # Healthcare track — submission reference
 
-Use these when filling the official form. Upload the PPT from this repo separately (the form field does not pull from GitHub).
+Use these when filling the official form. The architecture **PPT** is not on GitHub (gitignored); upload it from your local copy when the form asks for it.
 
 ## URLs
 
@@ -8,7 +8,7 @@ Use these when filling the official form. Upload the PPT from this repo separate
 | --- | --- |
 | Project web link | https://renalbuddy.onrender.com |
 | GitHub | https://github.com/MarcusAngTan/RenalBuddy |
-| Architecture diagram (PPT) | `docs/RenalBuddy_Architecture_Trust_Boundary.pptx` |
+| Architecture diagram (PPT) | Local file only (e.g. `docs/RenalBuddy_Architecture_Trust_Boundary.pptx` on your machine—not committed) |
 
 ## Copy-paste
 

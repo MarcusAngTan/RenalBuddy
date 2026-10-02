@@ -1,12 +1,14 @@
 # RenalBuddy
 
-**Live demo:** [https://renalbuddy.onrender.com](https://renalbuddy.onrender.com) · **Source:** [github.com/MarcusAngTan/RenalBuddy](https://github.com/MarcusAngTan/RenalBuddy) · **Architecture:** [`docs/architecture.md`](docs/architecture.md) · **Diagram (PPT):** [`docs/RenalBuddy_Architecture_Trust_Boundary.pptx`](docs/RenalBuddy_Architecture_Trust_Boundary.pptx)
+**Live demo:** [https://renalbuddy.onrender.com](https://renalbuddy.onrender.com) · **Source:** [github.com/MarcusAngTan/RenalBuddy](https://github.com/MarcusAngTan/RenalBuddy) · **Architecture:** [`docs/architecture.md`](docs/architecture.md) (includes trust-boundary diagram)
 
 RenalBuddy is a **mobile-first web app** for people living with **nephrotic syndrome** (or a related glomerular disease) between nephrology visits. You type the plan the clinic already gave you, check in at home on protein, weight, swelling, medicines, and how you feel, then open **Visit** for a structured summary to take to the next appointment.
 
 It is a personal log, not medical advice. It does **not** calculate a dose, invent a taper, read a dipstick by camera, or label protein as relapse or remission. Optional AI only restates facts you already logged (see [Safety](#safety)).
 
-Trust boundaries and system overview: [`docs/architecture.md`](docs/architecture.md).
+Trust boundaries and system overview: [`docs/architecture.md`](docs/architecture.md). Form submission checklist: [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
+
+Word (`.docx`) and PowerPoint (`.pptx`) files are **not** stored in this repo (see `.gitignore`); keep any architecture **PPT** on your machine for the competition upload field.
 
 ## Live demo (public HTTPS)
 
