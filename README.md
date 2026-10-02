@@ -127,7 +127,7 @@ One HTTPS URL serves the built React app and `/api` from the same FastAPI proces
 3. Environment variables:
    - `DATABASE_URL` — TiDB string from step 1.
    - `JWT_SECRET` — long random string (32+ bytes); Render can generate one.
-   - `CORS_ORIGINS` — your exact public origin only, e.g. `https://renalbuddy.onrender.com` (no trailing slash).
+   - `CORS_ORIGINS` — optional if you deploy on Render (the app adds `RENDER_EXTERNAL_URL` automatically). For other hosts, set your exact public origin, e.g. `https://renalbuddy.onrender.com`.
    - Leave **`LLM_API_KEY` unset**.
 4. Deploy. Migrations run on container start (`alembic upgrade head`).
 

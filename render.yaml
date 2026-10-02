@@ -1,5 +1,5 @@
 # Render Blueprint: one free web service + external TiDB Serverless (MySQL).
-# Set DATABASE_URL and CORS_ORIGINS in the dashboard after the first deploy URL is known.
+# Required: DATABASE_URL (TiDB). JWT_SECRET is generated. CORS adds RENDER_EXTERNAL_URL automatically in app code.
 services:
   - type: web
     name: renalbuddy
@@ -13,5 +13,3 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      - key: CORS_ORIGINS
-        sync: false

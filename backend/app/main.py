@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -47,6 +48,9 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="RenalBuddy", lifespan=lifespan)
     origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+    render_origin = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+    if render_origin and render_origin not in origins:
+        origins.append(render_origin)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
