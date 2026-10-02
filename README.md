@@ -1,5 +1,7 @@
 # RenalBuddy
 
+**Live demo:** [https://renalbuddy.onrender.com](https://renalbuddy.onrender.com) · **Source:** [github.com/MarcusAngTan/RenalBuddy](https://github.com/MarcusAngTan/RenalBuddy) · **Architecture:** [`docs/architecture.md`](docs/architecture.md) · **Diagram (PPT):** [`docs/RenalBuddy_Architecture_Trust_Boundary.pptx`](docs/RenalBuddy_Architecture_Trust_Boundary.pptx)
+
 RenalBuddy is a **mobile-first web app** for people living with **nephrotic syndrome** (or a related glomerular disease) between nephrology visits. You type the plan the clinic already gave you, check in at home on protein, weight, swelling, medicines, and how you feel, then open **Visit** for a structured summary to take to the next appointment.
 
 It is a personal log, not medical advice. It does **not** calculate a dose, invent a taper, read a dipstick by camera, or label protein as relapse or remission. Optional AI only restates facts you already logged (see [Safety](#safety)).
@@ -8,11 +10,11 @@ Trust boundaries and system overview: [`docs/architecture.md`](docs/architecture
 
 ## Live demo (public HTTPS)
 
-After you deploy (see [Deploy on Render (free)](#deploy-on-render-free)), put the URL here:
+**https://renalbuddy.onrender.com**
 
-**`https://your-service.onrender.com`** (replace after deploy)
+**Try it (judges, ~3 minutes):** open the URL → **Sign in as demo** → on **Today**, tap **Demo data** → open **Visit** → **Copy summary** or **Hand the phone over**.
 
-**Try it (judges, ~3 minutes):** open the URL → **Create an account** → on **Today**, tap **Demo data** → open **Visit** → **Copy summary** or **Hand the phone over**.
+Demo login: `ada.demo@example.com` / `password123` (created on server startup; sample clinical data loads only after **Demo data** on Today).
 
 Free Render instances **sleep when idle**; the first load after sleep can take **30–60 seconds**—refresh once if the page is slow. Do **not** set `LLM_API_KEY` in production; narration uses verified template text only.
 
@@ -65,14 +67,16 @@ npm run dev
 
 Vite prints a local URL, usually **http://localhost:5173**. Open that in your browser. The dev server proxies `/api` to port 8000, so keep **both** Terminal 1 and Terminal 2 running while you use the app.
 
-### Step 3 — Create an account
+### Step 3 — Sign in
 
-1. Go to **http://localhost:5173/register** (or choose **Create an account** from sign-in).
-2. Enter name, email, and password (at least 8 characters).
-3. Accept the disclaimer — **Create account** stays disabled until you do.
-4. Complete **setup** (appointment dates, medicines, taper, interests) or skip and fill them later under **Profile** and **Plan**.
+**Public site:** use **Sign in as demo** at [renalbuddy.onrender.com](https://renalbuddy.onrender.com) (same demo user as production).
 
-There is a **demo account** on the public site: **Sign in as demo** on the login page (`ada.demo@example.com` / `password123`), then **Demo data** on **Today** to load the sample week. Locally, the demo user is created when the API starts (same as production).
+**Local dev:** register at **http://localhost:5173/register**, or sign in as demo after the API has started (the demo user is seeded on startup).
+
+1. Accept the disclaimer on register — **Create account** stays disabled until you do.
+2. Complete **setup** (appointment dates, medicines, taper, interests) or skip and fill them later under **Profile** and **Plan**.
+
+The demo account is `ada.demo@example.com` / `password123`. After sign-in, use **Demo data** on **Today** to load the sample week (empty log only).
 
 ### Step 4 — Try the nephrotic-syndrome demo path (~3 minutes)
 
@@ -103,7 +107,7 @@ On iOS Safari or Android Chrome, you can use **Add to Home Screen** / **Install 
 | Symptom | What to check |
 | --- | --- |
 | **Loading…** forever or sign-in fails | API not running, or database not ready. Terminal 1: `docker compose up --build`. Look for `Application startup complete` on the API. |
-| **Could not sign in** with demo email | Register that email once at `/register`, or use your own account and **Demo data** on **Today**. |
+| **Could not sign in** with demo email | On production, wait for deploy then use **Sign in as demo**. Locally, ensure the API is up so the demo user is seeded; or register once with that email. |
 | **Demo data** errors | Sample week only loads when the account has no clinical data yet. Use a new account or delete data from **Profile**. |
 | Port **8000** in use | Stop the other process or change the host port in `docker-compose.yml`. |
 | Port **5173** in use | Stop the other Vite dev server or set another port: `npm run dev -- --port 5174`. |
@@ -117,8 +121,8 @@ One HTTPS URL serves the built React app and `/api` from the same FastAPI proces
 1. Create a free cluster and database named `renalbuddy`.
 2. Create a user and password; copy the **MySQL** connection string (host, port, TLS as shown in TiDB).
 3. Format for the app:  
-   `mysql+pymysql://USER:PASSWORD@HOST:PORT/renalbuddy?charset=utf8mb4`  
-   Add TiDB’s SSL parameters if their console requires them (see TiDB “Connect” docs for SQLAlchemy/PyMySQL).
+   `mysql+pymysql://USER:PASSWORD@HOST:PORT/DATABASE?charset=utf8mb4`  
+   TiDB Starter requires TLS; this app enables it automatically for `*.tidbcloud.com` hosts.
 
 ### 2. Render web service
 
@@ -134,10 +138,10 @@ One HTTPS URL serves the built React app and `/api` from the same FastAPI proces
 ### 3. Smoke test
 
 ```bash
-curl -s https://<your-service>.onrender.com/api/health
+curl -s https://renalbuddy.onrender.com/api/health
 ```
 
-Register in the browser, use **Demo data** on **Today**, open **Visit**. Update the [Live demo](#live-demo-public-https) URL in this README to match the form submission.
+**Sign in as demo** in the browser, use **Demo data** on **Today**, open **Visit**.
 
 **Local production-like build (optional):**
 

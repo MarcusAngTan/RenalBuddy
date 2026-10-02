@@ -36,7 +36,7 @@ def get_engine():
             )
         else:
             connect_args = _mysql_connect_args(url)
-            _engine = create_engine(url, pool_pre_ping=True, connect_args=connect_args or None)
+            _engine = create_engine(url, pool_pre_ping=True, connect_args=connect_args)
     return _engine
 
 
