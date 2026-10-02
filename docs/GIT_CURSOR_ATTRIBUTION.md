@@ -22,6 +22,12 @@ Cursor adds that line automatically on commits made from the IDE.
 }
 ```
 
+3. Enable this repo’s hook (strips co-author if Cursor still adds it):
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## If the repo sidebar still shows cursoragent
 
 Commit history on `main` is already cleaned (author is only you). GitHub’s **Contributors** sidebar uses a **separate cache** and can lag after force-pushes.
