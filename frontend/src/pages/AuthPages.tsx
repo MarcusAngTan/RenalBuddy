@@ -14,25 +14,32 @@ export function LoginPage() {
   const [pending, setPending] = useState(false);
   if (user) return <Navigate to="/" replace />;
 
+  const demoEmail = "ada.demo@example.com";
+  const demoPassword = "password123";
+
+  async function submitLogin(loginEmail: string, loginPassword: string) {
+    setPending(true);
+    setError(null);
+    try {
+      const session = await api<TokenResponse>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+      signIn(session);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not sign in.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <AuthFrame>
       <form
         className="space-y-4"
         onSubmit={async (event) => {
           event.preventDefault();
-          setPending(true);
-          setError(null);
-          try {
-            const session = await api<TokenResponse>("/api/auth/login", {
-              method: "POST",
-              body: JSON.stringify({ email, password }),
-            });
-            signIn(session);
-          } catch (err) {
-            setError(err instanceof ApiError ? err.message : "Could not sign in.");
-          } finally {
-            setPending(false);
-          }
+          await submitLogin(email, password);
         }}
       >
         <h1 className="text-3xl font-extrabold">Sign in</h1>
@@ -56,16 +63,19 @@ export function LoginPage() {
           className="w-full"
           type="button"
           variant="quiet"
+          disabled={pending}
           onClick={() => {
-            setEmail("ada.demo@example.com");
-            setPassword("password123");
+            setEmail(demoEmail);
+            setPassword(demoPassword);
+            void submitLogin(demoEmail, demoPassword);
           }}
         >
-          Demo data
+          Sign in as demo
         </Button>
       </form>
       <p className="mt-3 text-xs leading-relaxed text-ink/55">
-        Demo account: ada.demo@example.com / password123. After sign in, use Demo data on Today if the log is empty.
+        Demo account: {demoEmail} / {demoPassword}. After sign in, tap <strong>Demo data</strong> on Today to load a sample
+        week, then open Visit.
       </p>
       <p className="mt-6 text-sm">
         New here?{" "}

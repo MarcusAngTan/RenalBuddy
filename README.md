@@ -72,7 +72,7 @@ Vite prints a local URL, usually **http://localhost:5173**. Open that in your br
 3. Accept the disclaimer — **Create account** stays disabled until you do.
 4. Complete **setup** (appointment dates, medicines, taper, interests) or skip and fill them later under **Profile** and **Plan**.
 
-There is no pre-seeded login in the database. The **Demo data** button on the sign-in screen only fills example email and password (`ada.demo@example.com` / `password123`); that works **after** you register once with those credentials. Easiest path: register with any email you like.
+There is a **demo account** on the public site: **Sign in as demo** on the login page (`ada.demo@example.com` / `password123`), then **Demo data** on **Today** to load the sample week. Locally, the demo user is created when the API starts (same as production).
 
 ### Step 4 — Try the nephrotic-syndrome demo path (~3 minutes)
 

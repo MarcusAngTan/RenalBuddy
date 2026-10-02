@@ -3,6 +3,9 @@ DISCLAIMER = (
     "It does not give medical advice, calculate doses, or decide whether a dipstick means a relapse."
 )
 
+DEMO_USER_EMAIL = "ada.demo@example.com"
+DEMO_USER_PASSWORD = "password123"
+
 CRISIS_COPY = (
     "If you feel unsafe, call 995. You can also call Samaritans of Singapore on 1767, "
     "or contact the Institute of Mental Health. International helplines are listed at iasp.info."
